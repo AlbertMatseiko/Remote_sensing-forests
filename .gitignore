@@ -1,5 +1,15 @@
-./MyScripts/check_gpu.py
+TrainingNN/check_gpu.py
 /stuff/Forests/*
 /stuff/*
-/models/
 /MyNotebooks/*checkpoint.ipynb
+/DATA/cache/
+/DATA/h5_files/
+/DATA/data_raw/
+/models/ResNet_f.32.32.32_k.3.3.3_s_CLASSES.10_BS.1/
+/models/ResNet_f.32.32.32_k.3.3.3_s_CLASSES.10_BS.2/
+/models/ResNet_f.64.64.64_k.3.3.3_s_CLASSES.10_BS.4/
+/.ipynb_checkpoints/
+/RawDataProcessing/.ipynb_checkpoints/
+/TrainingNN/.ipynb_checkpoints/
+.idea
+/DATA/data_raw/
