@@ -1,6 +1,5 @@
 # Remote_sensing-forrests. 
 ## Unsupervised ML method is applied to create a classificator of forrests on LANDSAT images. Invariant Information Clustering algorithm is in use.
-
 ### DATA:
 Directory DATA/data_raw contains a number of LANDSAT scenes as .zip archives
 
