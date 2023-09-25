@@ -1,4 +1,18 @@
-# Remote_sensing-forrests
-Unsupervised ML method is applied to create a classificator of forrests on LANDSAT images.
+# Remote_sensing-forrests. 
+## Unsupervised ML method is applied to create a classificator of forrests on LANDSAT images. Invariant Information Clustering algorithm is in use.
 
-Directory "MyScripts" contains of usefull scripts. "main.py" creates and trains a ResNet neural network. Directory "MyNotebooks" contains some jupyter notebooks, which are basically drafts for scripts. Training data must be represented with .h5 file, containig set of 512x512 images in 7 spectral channels (datasets of shape (N,512,512,7) ). The .h5 file must be located by path "../DATA/data/".
+### DATA:
+Directory DATA/data_raw contains a number of LANDSAT scenes as .zip archives
+
+### RawDataProcessing:
+contains a code for making HDF5 file from raw images from DATA containig set of images in 7 spectral channels (datasets of shape (N,SIZE,SIZE,7)).
+Eventual HDF5 file is stored at './DATA/h5_files'.
+
+### TrainingNN
+contains scripts for creating and training a neural network.
+
+### main.py:
+creates and trains a ResNet neural network using TrainingNN scripts.
+
+
+### Some .py scripts have .ipynb clones.
