@@ -1,0 +1,7 @@
+jupyter
+tf-nightly
+h5py
+plotly
+pandas
+matplotlib
+gdal
