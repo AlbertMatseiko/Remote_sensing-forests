@@ -5,6 +5,7 @@ TrainingNN/check_gpu.py
 /DATA/cache/
 /DATA/h5_files/
 /DATA/data_raw/
+# Why not just 'models'?
 /models/ResNet_f.32.32.32_k.3.3.3_s_CLASSES.10_BS.1/
 /models/ResNet_f.32.32.32_k.3.3.3_s_CLASSES.10_BS.2/
 /models/ResNet_f.64.64.64_k.3.3.3_s_CLASSES.10_BS.4/
@@ -15,3 +16,5 @@ TrainingNN/check_gpu.py
 /DATA/data_raw/
 .nfs*
 nohup.out
+.DS_Store
+__pycache__
