@@ -5,3 +5,5 @@ plotly
 pandas
 matplotlib
 gdal
+scipy
+opencv-python

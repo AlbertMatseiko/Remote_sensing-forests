@@ -18,6 +18,7 @@ TrainingNN/check_gpu.py
 nohup.out
 .DS_Store
 __pycache__
+models/logs_tb
 /models/*/figures/fig72/*1.html
 /models/*/figures/fig72/*2.html
 /models/*/figures/fig72/*3.html

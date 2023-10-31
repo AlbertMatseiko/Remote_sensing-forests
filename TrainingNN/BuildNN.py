@@ -1,6 +1,5 @@
-import tensorflow as tf
-from tensorflow.keras.layers import Conv2D, BatchNormalization, Activation, MaxPool2D, Conv2DTranspose, Concatenate, Input, Add
-from tensorflow.keras.models import Model
+from keras.layers import Conv2D, BatchNormalization, Activation, Conv2DTranspose, Concatenate, Input, Add
+from keras.models import Model
 
 def conv_block(x, num_filters, kernel):
     x = Conv2D(num_filters, kernel, padding="same")(x)
@@ -66,12 +65,12 @@ def build_resnet(filters, conv_kernel, CHANNELS = 7, CLASSES = 10):
     return model
 
 def simple_classifier(CHANNELS = 7, CLASSES = 10):
-    inp = tf.keras.layers.Input(shape = (None, None, CHANNELS)) # 512x512x7
-    x = tf.keras.layers.Conv2D(32, 3, padding = 'same', activation = 'relu')(inp)
+    inp = Input(shape = (None, None, CHANNELS)) # 512x512x7
+    x = Conv2D(32, 3, padding = 'same', activation = 'relu')(inp)
     x = BatchNormalization()(x)
-    x = tf.keras.layers.Conv2D(32, 3, padding = 'same', activation = 'relu')(x)
+    x = Conv2D(32, 3, padding = 'same', activation = 'relu')(x)
     x = BatchNormalization()(x)
-    x = tf.keras.layers.Conv2D(32, 3, padding = 'same', activation = 'relu')(x)
+    x = Conv2D(32, 3, padding = 'same', activation = 'relu')(x)
     x = BatchNormalization()(x)
-    c = tf.keras.layers.Conv2D(CLASSES, 1, padding = 'same', activation = 'softmax')(x)
-    return tf.keras.Model(inputs = inp, outputs = c)
+    c = Conv2D(CLASSES, 1, padding = 'same', activation = 'softmax')(x)
+    return Model(inputs = inp, outputs = c)
