@@ -4,7 +4,7 @@ from plotly.subplots import make_subplots
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
-from osgeo import gdal, osr
+from osgeo import osr
 
 class VisualClass:
     def __init__(self, path_to_h5 = './data/LC08_L2SP_02_T1_cropped.h5'):
@@ -68,7 +68,7 @@ class VisualClass:
             SIGMA = f['all/norm_params/sigma_values'][:]
             GEO = f['all/geo_coords'][img_no]
             img_norm = f['all/data_norm'][img_no,:,:,:]
-            img = (img_norm*SIGMA + MEAN) / 2**16
+            img = (img_norm*SIGMA + MEAN) / 2**8
 
         def renorm(img, axis=(0, 1)):
             img_min = img.min(axis)
@@ -90,7 +90,7 @@ class VisualClass:
             SIGMA = f['all/norm_params/sigma_values'][:]
             GEO = f['all/geo_coords'][img_no]
             img_norm = f['all/data_norm'][img_no,:,:,:]
-        img = (img_norm*SIGMA + MEAN) / 2**16
+        img = (img_norm*SIGMA + MEAN) / 2**8
         return img[:, :, 5:2:-1]
 
     def get_image(self, start, stop):
@@ -99,7 +99,7 @@ class VisualClass:
             SIGMA = f['all/norm_params/sigma_values'][start:stop]
             GEO = f['all/geo_coords'][start:stop]
             img_norm = f['all/data_norm'][start:stop,:,:,:]
-        img = (img_norm*SIGMA + MEAN) / 2**16
+        img = (img_norm*SIGMA + MEAN) / 2**8
         return img, GEO
 
     def get_norm_image(self, start, stop):
@@ -129,7 +129,7 @@ class VisualClass:
                       col = 3)
 
         for i in range(CLASSES):
-            class_mask = np.where(predicted_classes[img_no] == i, i, np.nan)
+            class_mask = np.where(predicted_classes[0] == i, i, np.nan)
             fig.add_trace(
                 go.Heatmap(
                     z=class_mask, 
