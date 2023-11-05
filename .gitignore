@@ -13,5 +13,4 @@ TrainingNN/check_gpu.py
 **/*8.html
 **/*9.html
 .idea
-/DATA/data_raw/
 nohup.out
