@@ -1,0 +1,6 @@
+To install required packages (in conda), one can use following.
+
+conda create -n <name_of_env> python=3.8
+conda install -c conda-forge cudatoolkit=11.2.2
+conda install -c conda-forge cudnn=8.1
+pip install tensorflow=2.11.1
