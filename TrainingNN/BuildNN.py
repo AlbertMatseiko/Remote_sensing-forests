@@ -1,5 +1,13 @@
 import tensorflow as tf
 
+if __name__ != "__main__":
+    import sys
+
+    sys.path.append("../")
+
+from TrainingNN.Transform import ImageProjectiveTransformLayer, RandomAffineTransformParams
+from TrainingNN.Loss import conv_loss
+
 # Strange import because of PyCharm's bug
 tfl = tf.keras.layers
 Conv2D = tfl.Conv2D
@@ -21,23 +29,6 @@ def conv_block(x, num_filters, kernel):
     return x
 
 
-def encoder_block(x, num_filters, k_conv=3, s=2):
-    x = conv_block(x, num_filters, k_conv)
-    p = Conv2D(num_filters, k_conv, strides=s, padding="same")(x)
-    p = BatchNormalization(axis=-1)(p)
-    p = LeakyReLU(alpha=0.1)(x)
-    return x, p
-
-
-def decoder_block(x, skip_features, num_filters, k_conv=3, stride=2):
-    x = Conv2DTranspose(num_filters, k_conv, strides=stride, padding="same")(x)
-    x = Concatenate()([x, skip_features])
-    x = BatchNormalization(axis=-1)(x)
-    x = LeakyReLU(alpha=0.1)(x)
-    x = conv_block(x, num_filters, k_conv)
-    return x
-
-
 def res_block(x, f, k):
     x_skip = x
     x_skip = conv_block(x_skip, f, k)
@@ -49,33 +40,15 @@ def res_block(x, f, k):
     return x
 
 
-# Задаём фильтры и размеры ядер на этапе создания модели
-def build_unet(filters, conv_kernel, strides, CHANNELS=7, CLASSES=10):
+def build_resnet(filters=None, conv_kernel=None, depth=2, CHANNELS=7, CLASSES=10):
+    if conv_kernel is None:
+        conv_kernel = [3, 3, 3]
+    if filters is None:
+        filters = [32, 64, 32]
     inputs = Input(shape=(None, None, CHANNELS))
-
-    s1, p1 = encoder_block(inputs, filters[0], conv_kernel[0], strides[0])
-    s2, p2 = encoder_block(p1, filters[1], conv_kernel[1], strides[1])
-    s3, p3 = encoder_block(p2, filters[2], conv_kernel[2], strides[2])
-    s4, p4 = encoder_block(p3, filters[3], conv_kernel[3], strides[3])
-
-    b1 = conv_block(p4, filters[4], conv_kernel[4])
-
-    d1 = decoder_block(b1, s4, filters[3], conv_kernel[3], stride=strides[3])
-    d2 = decoder_block(d1, s3, filters[2], conv_kernel[2], stride=strides[2])
-    d3 = decoder_block(d2, s2, filters[1], conv_kernel[1], stride=strides[1])
-    d4 = decoder_block(d3, s1, filters[0], conv_kernel[0], stride=strides[0])
-
-    outputs = Conv2D(CLASSES, 1, padding="same", activation="softmax")(d4)
-
-    model = Model(inputs, outputs, name="U-Net")
-    return model
-
-
-def build_resnet(filters, conv_kernel, CHANNELS=7, CLASSES=10):
-    inputs = Input(shape=(None, None, CHANNELS))
-
-    x = res_block(inputs, filters[0], conv_kernel[0])
-    x = res_block(x, filters[1], conv_kernel[1])
+    x = inputs
+    for i in range(depth):
+        x = res_block(x, filters[i], conv_kernel[i])
 
     outputs = Conv2D(CLASSES, 1, padding="same", activation="softmax")(x)
 
@@ -83,13 +56,46 @@ def build_resnet(filters, conv_kernel, CHANNELS=7, CLASSES=10):
     return model
 
 
-def simple_classifier(CHANNELS=7, CLASSES=10):
-    inp = tf.keras.layers.Input(shape=(None, None, CHANNELS))  # 512x512x7
-    x = tf.keras.layers.Conv2D(32, 3, padding='same', activation='relu')(inp)
-    x = BatchNormalization()(x)
-    x = tf.keras.layers.Conv2D(32, 3, padding='same', activation='relu')(x)
-    x = BatchNormalization()(x)
-    x = tf.keras.layers.Conv2D(32, 3, padding='same', activation='relu')(x)
-    x = BatchNormalization()(x)
-    c = tf.keras.layers.Conv2D(CLASSES, 1, padding='same', activation='softmax')(x)
-    return tf.keras.Model(inputs=inp, outputs=c)
+### Задаём фильтры и размеры ядер на этапе создания модели
+### Список 'filters' - кол-во фильтров, по порядку следования слоёв 'encoder'
+### Список 'conv_kernels' - размер ядер свёрток в 'encoder' и 'decoder', по порядку следования слоёв 'encoder'
+### Список 'strides' - размер 'strides' в 'encoder' и 'decoder', по порядку следования слоёв 'encoder'
+def make_resnet_model(filters: list = None, conv_kernel: list = None, depth=2,
+                      CHANNELS=7, CLASSES=10, WIDTH=256, HEIGHT=256, BATCH_SIZE=8,
+                      CONTRAST_FACTOR=0.1):
+    # Создаём основу модели
+    if conv_kernel is None:
+        conv_kernel = [3, 3, 3]
+    if filters is None:
+        filters = [32, 64, 32]
+    inp = tf.keras.layers.Input(shape=(None, None, CHANNELS))
+
+    # classifier = simple_classifier()
+    classifier = build_resnet(filters, conv_kernel, depth, CHANNELS, CLASSES)
+    # classifier = build_unet(filters, conv_kernel, strides)
+
+    outp = classifier(inp)
+    model = tf.keras.Model(inputs=inp, outputs=outp)
+
+    # По гиперпараметрам генерируем имя модели
+    s = 'f'
+    for i in filters:
+        s += '.' + str(i)
+    s += '_k'
+    for i in conv_kernel:
+        s += '.' + str(i)
+    # s += '_s'
+    # for i in strides:
+    #    s +='.'+str(i)
+    s += '_c' + str(CONTRAST_FACTOR)
+
+    model_name = str(classifier.name) + '_' + s + '_CLASSES.' + str(CLASSES) + '_BS.' + str(BATCH_SIZE)
+
+    # Алгоритм подсчёта лосса
+    params, inverse_params = RandomAffineTransformParams()(inp, WIDTH)
+    transformed_inp = ImageProjectiveTransformLayer()(inp, params, WIDTH, HEIGHT)
+    transformed_inp = tf.image.random_contrast(transformed_inp, 1. - CONTRAST_FACTOR, 1. + CONTRAST_FACTOR)
+    transformed_outp = classifier(transformed_inp)
+    inv_transformed_outp = ImageProjectiveTransformLayer()(transformed_outp, inverse_params)
+    model.add_loss(conv_loss(outp, inv_transformed_outp, WIDTH, HEIGHT, BATCH_SIZE))
+    return model, model_name
