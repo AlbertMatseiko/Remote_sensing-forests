@@ -4,6 +4,7 @@ import os
 
 # importing tensorflow, check gpu
 import tensorflow as tf
+tfl = tf.keras.layers
 
 print(tf.config.list_physical_devices('GPU'), tf.__version__)
 gpus = tf.config.list_physical_devices('GPU')
@@ -12,13 +13,13 @@ for gpu in gpus:
     tf.config.experimental.set_memory_growth(gpu, True)
 
 # importing from local scripts
-from TrainingNN.DataLoad import BatchLoader, make_train_dataset
+from TrainingNN.DataLoad import make_train_dataset
 from TrainingNN.BuildNN import build_resnet
 from TrainingNN.Transform import *
 from TrainingNN.Loss import conv_loss
 from TrainingNN.Visualize import VisualClass
 
-path_to_h5 = '../DATA/data/LC08_L2SP_02_T1_cropped_small.h5'
+path_to_h5 = '../data/h5_files/LC08_L2SP_02_T1_256.h5'
 with h5py.File(path_to_h5, 'r') as f:
     LENGTH_OF_EPOCH = len(f['all/data_norm']) // 5
     print('Number of small images in h5:', LENGTH_OF_EPOCH)
@@ -36,7 +37,7 @@ BATCH_SIZE = 16
 ###Список 'filters' - кол-во фильтров, по порядку следования слоёв 'encoder'
 ###Список 'conv_kernels' - размер ядер свёрток в 'encoder' и 'decoder', по порядку следования слоёв 'encoder'
 ###Список 'strides' - размер 'strides' в 'encoder' и 'decoder', по порядку следования слоёв 'encoder'
-def make_model(filters: list = None, conv_kernel: list = None):  # , strides = [2,2,2,2]):
+def make_model(filters: list = None, conv_kernel: list = None, contrast_factor=0.05):  # , strides = [2,2,2,2]):
 
     # Создаём основу модели
     if conv_kernel is None:
@@ -59,15 +60,17 @@ def make_model(filters: list = None, conv_kernel: list = None):  # , strides = [
     s += '_k'
     for i in conv_kernel:
         s += '.' + str(i)
-    s += '_s'
+    # s += '_s'
     # for i in strides:
     #    s +='.'+str(i)
+    s += '_c'+str(contrast_factor)
 
     model_name = str(classifier.name) + '_' + s + '_CLASSES.' + str(CLASSES) + '_BS.' + str(BATCH_SIZE)
 
     # Алгоритм подсчёта лосса
     params, inverse_params = RandomAffineTransformParams()(inp, WIDTH)
     transformed_inp = ImageProjectiveTransformLayer()(inp, params, WIDTH, HEIGHT)
+    transformed_inp = tfl.RandomContrast(contrast_factor)(transformed_inp)
     transformed_outp = classifier(transformed_inp)
     inv_transformed_outp = ImageProjectiveTransformLayer()(transformed_outp, inverse_params)
     model.add_loss(conv_loss(outp, inv_transformed_outp, WIDTH, HEIGHT, BATCH_SIZE))
@@ -78,11 +81,7 @@ model, model_name = make_model()
 print(model_name)
 
 # making dir for model if necessary
-try:
-    os.makedirs('./models/' + model_name)
-    print('directory for the model is created')
-except:
-    print('directory for the model already exists')
+os.makedirs('./models/' + model_name, exist_ok=True)
 # make a dir for tensorboard logs
 logdir = "./models/logs_tb/" + model_name + "/fit/" + datetime.now().strftime("%Y%m%d-%H%M%S")
 os.makedirs(logdir)
@@ -97,10 +96,7 @@ class DrawTestPic(tf.keras.callbacks.Callback):
         predicted = model.predict(img_norm, verbose=False)
         predicted_classes = predicted.argmax(axis=-1)
         no = 6
-        try:
-            os.makedirs("./models/" + model_name + "/figures/fig" + str(no))
-        except:
-            pass
+        os.makedirs("./models/" + model_name + "/figures/fig" + str(no), exist_ok=True)
         f = V.draw_layers(no, predicted_classes)
         f.write_html("./models/" + model_name + "/figures/fig" + str(no) + "/" + str(epoch) + ".html")
 
