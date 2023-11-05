@@ -12,5 +12,8 @@ TrainingNN/check_gpu.py
 **/*7.html
 **/*8.html
 **/*9.html
+*.json
+**/trial*
 .idea
 nohup.out
+/init.sh

@@ -95,7 +95,7 @@ def extract_scene_to_cache(path_to_data, s):
             os.remove(f)
         #data_list = os.listdir(tar)
         for i,m in enumerate(tar.getmembers()):
-            if (m.name.endswith('.TIF') and 'SR_B' in m.name):
+            if m.name.endswith('.TIF') and 'SR_B' in m.name:
                 tar.extract(m, '../DATA/cache/')
                 
 # calculate the angle of image rotation (to get rid of black triangles)

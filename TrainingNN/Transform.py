@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np
 
 
+
 def generate_affine_transform_params(batch_size, size=256):
     pi = np.pi
 
@@ -42,6 +43,13 @@ def generate_affine_transform_params(batch_size, size=256):
 
 
 class RandomAffineTransformParams(tf.keras.layers.Layer):
+    def __init__(self):
+        super().__init__()
+
+    def get_config(self):
+        config = super().get_config()
+        return config
+
     def call(self, inp, WIDTH=256):
         return generate_affine_transform_params(tf.shape(inp)[0], size=WIDTH)
 
@@ -51,6 +59,14 @@ class ImageProjectiveTransformLayer(tf.keras.layers.Layer):
         super(ImageProjectiveTransformLayer, self).__init__(**kwargs)
         self.interpolation = interpolation
         self.fill_value = fill_value
+
+    def get_config(self):
+        config = super().get_config()
+        config.update({
+            "interpolation": self.interpolation,
+            "fill_value": self.fill_value,
+        })
+        return config
 
     def call(self, inputs, transforms, WIDTH=256, HEIGHT=256):
         S1, S2 = WIDTH, HEIGHT
