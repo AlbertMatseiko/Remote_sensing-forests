@@ -9,6 +9,7 @@ TrainingNN/check_gpu.py
 /.ipynb_checkpoints/
 /RawDataProcessing/.ipynb_checkpoints/
 *.ipynb*
+*.ipynb
 .idea
 /DATA/data_raw/
 .nfs*
