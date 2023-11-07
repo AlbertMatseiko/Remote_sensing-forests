@@ -31,11 +31,11 @@ CLASSES = 14
 MAX_SHIFT = 1  # максимальное смещение по вертикали и горизонтали в функции потерь
 BATCH_SIZE = 4
 DEPTH = 3
-CONTRAST_FACTOR = 0.1
-MAX_DELTA = 0.1
+CONTRAST_FACTOR = 0.03
+MAX_DELTA = 0.03
 CUTTING = 1  # set to contract the step per epoch in CUTTING times
-APPLY_CONV_LOSS = False
-APPLY_SHIFTS = False
+APPLY_CONV_LOSS = True
+APPLY_SHIFTS = APPLY_CONV_LOSS
 
 LR = tf.keras.optimizers.schedules.ExponentialDecay(initial_learning_rate=0.03,
                                                     decay_steps=NUM_OF_PICTURES // BATCH_SIZE,
