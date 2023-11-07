@@ -1,0 +1,1 @@
+Best hp = {'filters_0': 128, 'filters_1': 64, 'conv_kernel_0': 5, 'conv_kernel_1': 5} with metric = -1.7654134035110474. 
