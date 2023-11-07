@@ -87,7 +87,6 @@ class VisualClass:
         with h5py.File(self.path_to_h5, 'r') as f:
             MEAN = f['all/norm_params/mean_values'][:]
             SIGMA = f['all/norm_params/sigma_values'][:]
-            GEO = f['all/geo_coords'][img_no]
             img_norm = f['all/data_norm'][img_no, :, :, :]
         img = (img_norm * SIGMA + MEAN) / 2 ** 8
         return img[:, :, 5:2:-1]
@@ -107,12 +106,12 @@ class VisualClass:
             img_norm = f['all/data_norm'][start:stop, :, :, :]
         return img_norm, GEO
 
-    def draw_layers(self, img_no, predicted_classes, CLASSES=10, opacity=0.3):
+    def draw_layers(self, img_no, predicted_classes):
         with h5py.File(self.path_to_h5, 'r') as f:
             GEO = f['all/geo_coords'][img_no]
         GEO = self.transform_point_to_latlong(*GEO)
 
-        fig = make_subplots(rows=1, cols=3,
+        fig = make_subplots(rows=1, cols=2,
                             subplot_titles=("Original Image", "Classes", "Overlay", ""))
         rgb = self.get_rgb_image(img_no)
 
@@ -122,11 +121,8 @@ class VisualClass:
         fig.add_trace(px.imshow(rgb).data[0],
                       row=1,
                       col=2)
-        fig.add_trace(px.imshow(rgb).data[0],
-                      row=1,
-                      col=3)
 
-        for i in range(CLASSES):
+        for i in np.unique(predicted_classes):
             class_mask = np.where(predicted_classes[0] == i, i, np.nan)
             fig.add_trace(
                 go.Heatmap(
@@ -138,16 +134,6 @@ class VisualClass:
                     name=f"Class {i}",
                     opacity=1
                 ), row=1, col=2)
-            fig.add_trace(
-                go.Heatmap(
-                    z=class_mask,
-                    colorscale=[[0, f"hsv({i * 360 / 20},100%,100%)"], [1, f"hsv({i * 360 / 20},100%,100%)"]],
-                    hoverongaps=False,
-                    showscale=False,
-                    showlegend=False,
-                    name=f"Class {i}",
-                    opacity=opacity
-                ), row=1, col=3)
 
         fig.update_layout(
             title_text="GEO COORDS: Lat = " + str(np.round(GEO[0], 5)) + ' Long = ' + str(np.round(GEO[1], 5)))

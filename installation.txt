@@ -7,7 +7,8 @@ conda install jupyter
 conda install matplotlib
 conda install pandas
 conda install plotly
-conda install gdal
+conda install -c conda-forge gdal
+conda install -c menpo opencv
 conda install -c conda-forge cudatoolkit=11.2.2
 conda install -c conda-forge cudnn=8.1
 pip install tensorflow==2.11.0

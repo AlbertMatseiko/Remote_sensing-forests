@@ -31,8 +31,13 @@ CLASSES = 14
 MAX_SHIFT = 1  # максимальное смещение по вертикали и горизонтали в функции потерь
 BATCH_SIZE = 4
 DEPTH = 3
-CONTRAST_FACTOR = 0.01
-LR = tf.keras.optimizers.schedules.ExponentialDecay(initial_learning_rate=0.05,
+CONTRAST_FACTOR = 0.1
+MAX_DELTA = 0.1
+CUTTING = 1  # set to contract the step per epoch in CUTTING times
+APPLY_CONV_LOSS = False
+APPLY_SHIFTS = False
+
+LR = tf.keras.optimizers.schedules.ExponentialDecay(initial_learning_rate=0.03,
                                                     decay_steps=NUM_OF_PICTURES // BATCH_SIZE,
                                                     decay_rate=0.98)
 
@@ -40,11 +45,11 @@ LR = tf.keras.optimizers.schedules.ExponentialDecay(initial_learning_rate=0.05,
 filters = [128, 64, 64]
 conv_kernel = [2, 2, 2]
 
-model, model_name = make_resnet_model(filters, conv_kernel, depth=DEPTH,
-                                      apply_conv_loss=True, apply_shifts=True,
-                                      CHANNELS=CHANNELS, CLASSES=CLASSES, WIDTH=WIDTH, HEIGHT=HEIGHT,
-                                      BATCH_SIZE=BATCH_SIZE,
-                                      CONTRAST_FACTOR=CONTRAST_FACTOR)
+model, model_name, classificator = make_resnet_model(filters, conv_kernel, depth=DEPTH,
+                                                     apply_conv_loss=APPLY_CONV_LOSS, apply_shifts=APPLY_SHIFTS,
+                                                     CHANNELS=CHANNELS, CLASSES=CLASSES, WIDTH=WIDTH, HEIGHT=HEIGHT,
+                                                     BATCH_SIZE=BATCH_SIZE,
+                                                     CONTRAST_FACTOR=CONTRAST_FACTOR, MAX_DELTA=MAX_DELTA)
 print(model_name)
 
 # making dir for model if necessary
@@ -69,24 +74,32 @@ class DrawTestPic(tf.keras.callbacks.Callback):
             predicted = model.predict(img_norm, verbose=False)
             predicted_classes = predicted.argmax(axis=-1)
             os.makedirs("./models/" + model_name + "/figures/fig" + str(no), exist_ok=True)
-            f = V.draw_layers(no, predicted_classes, CLASSES=CLASSES)
+            f = V.draw_layers(no, predicted_classes)
             f.write_html("./models/" + model_name + "/figures/fig" + str(no) + "/" + str(self.J) + ".html")
 
 
+class SaveClassificator(tf.keras.callbacks.Callback):
+    def __init__(self, classificator_model):
+        self.classificator = classificator_model
+
+    def on_epoch_end(self, epoch, logs=None):
+        w = model.get_layer("ResNet").get_weights()
+        self.classificator.set_weights(w)
+        self.classificator.save('./models/' + model_name + '/classificator_last')
+
+
 callbacks = [
-    tf.keras.callbacks.EarlyStopping(monitor='loss', patience=5, min_delta=5e-4),
-    tf.keras.callbacks.ModelCheckpoint(filepath='./models/' + model_name + '/best',
-                                       monitor='loss',
-                                       save_freq='epoch'),
+    tf.keras.callbacks.EarlyStopping(monitor='loss', patience=3, min_delta=3e-3),
     tf.keras.callbacks.TensorBoard(log_dir=logdir),
-    DrawTestPic(J=0)
+    DrawTestPic(J=0),
+    SaveClassificator(classificator_model=classificator)
 ]
 
 model.compile(optimizer=tf.keras.optimizers.legacy.Adam(learning_rate=LR))
 
 train_dataset = make_train_dataset(path_to_h5, BATCH_SIZE, WIDTH, HEIGHT, CHANNELS)
-history = model.fit(train_dataset, epochs=50,
-                    steps_per_epoch=NUM_OF_PICTURES // BATCH_SIZE,
+history = model.fit(train_dataset, epochs=15,
+                    steps_per_epoch=NUM_OF_PICTURES // BATCH_SIZE //CUTTING,
                     callbacks=callbacks,
                     verbose=1)
 model.save('./models/' + model_name + '/last')

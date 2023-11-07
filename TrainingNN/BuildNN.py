@@ -1,4 +1,5 @@
 import tensorflow as tf
+from datetime import date
 
 if __name__ != "__main__":
     import sys
@@ -63,7 +64,7 @@ def build_resnet(filters=None, conv_kernel=None, depth=2, CHANNELS=7, CLASSES=10
 def make_resnet_model(filters: list = None, conv_kernel: list = None, depth=2,
                       apply_conv_loss=False, apply_shifts=False,
                       CHANNELS=7, CLASSES=10, WIDTH=256, HEIGHT=256, BATCH_SIZE=8,
-                      CONTRAST_FACTOR=0.1):
+                      CONTRAST_FACTOR=0.1, MAX_DELTA=0.1):
     # Создаём основу модели
     if conv_kernel is None:
         conv_kernel = [3, 3, 3]
@@ -88,7 +89,7 @@ def make_resnet_model(filters: list = None, conv_kernel: list = None, depth=2,
     # s += '_s'
     # for i in strides:
     #    s +='.'+str(i)
-    s += '_c' + str(CONTRAST_FACTOR)
+    s += f'_c{CONTRAST_FACTOR}_b{MAX_DELTA}'
 
     if apply_conv_loss:
         loss_fun = conv_loss
@@ -99,15 +100,17 @@ def make_resnet_model(filters: list = None, conv_kernel: list = None, depth=2,
     else:
         loss_fun = negative_mutual_inf_without_shifts
         loss_name = 'nmi_without_shifts'
-    model_name = (str(classifier.name) + '_' + s + '_CLASSES.' + str(CLASSES) + '_BS.' + str(BATCH_SIZE)
-                  + '_loss.' + loss_name)
+
+    day = date.today().strftime("%d.%m.%Y")
+    model_name = f"{day}_{classifier.name}_{s}_CLASSES.{CLASSES}_BS.{BATCH_SIZE}_loss.{loss_name}"
 
     # Алгоритм подсчёта лосса
     params, inverse_params = RandomAffineTransformParams()(inp, WIDTH)
     transformed_inp = ImageProjectiveTransformLayer()(inp, params, WIDTH, HEIGHT)
     transformed_inp = tf.image.random_contrast(transformed_inp, 1. - CONTRAST_FACTOR, 1. + CONTRAST_FACTOR)
+    transformed_inp = tf.image.random_brightness(transformed_inp, MAX_DELTA)
     transformed_outp = classifier(transformed_inp)
     inv_transformed_outp = ImageProjectiveTransformLayer()(transformed_outp, inverse_params)
     model.add_loss(loss_fun(outp, inv_transformed_outp, WIDTH=WIDTH, HEIGHT=HEIGHT,
                             BATCH_SIZE=BATCH_SIZE))
-    return model, model_name
+    return model, model_name, classifier

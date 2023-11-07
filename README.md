@@ -16,3 +16,8 @@ creates and trains a ResNet neural network using TrainingNN scripts.
 
 
 ### Some .py scripts have .ipynb clones.
+
+### How to launch
+1. cropping_and_h5making.py
+2. main.py
+3. validation.py
